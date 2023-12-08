@@ -1,7 +1,6 @@
 from ladybug_geometry.geometry3d import Point3D, Face3D, Polyface3D, Vector3D
 import streamlit as st
 from honeybee.model import Model,Room
-import honeybee_energy.load as loads
 import json
 import web as web
 import tempfile
@@ -9,6 +8,8 @@ from pathlib import Path
 from honeybee.boundarycondition import boundary_conditions
 import pollination_streamlit_viewer as ps
 import pandas as pd
+from utils import get_lighting_gains,get_occupancy_gains,get_elec_equip_gains
+
 
 
 
@@ -93,25 +94,28 @@ def iterate_rooms_and_display_properties():
     room_data = []
 
     # Iterate over rooms in the model
+
+    # TODO - add infiltration
+    # TODO - add custom custom gains per room
+    # TODO - allow user to make changes and make sure they are saved back in the model via the application
+    # TODO - allow user to download model 
+
     for room in st.session_state.hb_model.rooms:
-        # Collect all room properties
-        # room_properties = get_all_room_properties(room)
-        # TODO 
-        #if not room.properties.energy.lighting:
-        #    room.properties.energy.lighting = loads.lighting.
+        if not room.properties.energy.people:
+            room.properties.energy.people = get_occupancy_gains(room)
+        if not room.properties.energy.lighting:
+            room.properties.energy.lighting = get_lighting_gains(room)
+        if not room.properties.energy.electric_equipment:
+            room.properties.energy.electric_equipment = get_elec_equip_gains(room)
         
         room_properties = {
             "Display name": room.display_name,
             "Room identifier": room.identifier,
             "Story": room.story,
             "Floor area": room.floor_area,
-            "Lighting gains": room.properties.energy.lighting,
-            "People gains": room.properties.energy.people,
-            "Miscelaneous gains": room.properties.energy.small_power,
-
-
-
-            # Add more room properties as needed
+            "Lighting gains": room.properties.energy.lighting.to_dict(),
+            "People gains": room.properties.energy.people.to_dict(),
+            "Elec equipment gains": room.properties.energy.electric_equipment.to_dict()
         }
         room_data.append(room_properties)
 

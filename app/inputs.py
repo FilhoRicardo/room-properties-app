@@ -8,8 +8,13 @@ from pathlib import Path
 from honeybee.boundarycondition import boundary_conditions
 import pollination_streamlit_viewer as ps
 import pandas as pd
-from utils import get_lighting_gains,get_occupancy_gains,get_elec_equip_gains
-
+from utils import get_lighting_gains,get_occupancy_gains,get_elec_equip_gains,get_infiltration_gains
+from honeybee_energy.lib.programtypes import STANDARDS_REGISTRY
+from honeybee_energy.lib.programtypes import PROGRAM_TYPES
+from honeybee_energy.lib.programtypes import program_type_by_identifier
+from honeybee_energy.lib.programtypes import BUILDING_TYPES
+from honeybee.search import filter_array_by_keywords
+import random
 
 
 
@@ -36,6 +41,10 @@ def initialize():
         st.session_state.hb_json_path = None
     if "visualize" not in st.session_state: 
         st.session_state.visualize = None
+    if "vintage" not in st.session_state:
+        st.session_state.vintage = None
+    if "building_type" not in st.session_state:
+        st.session_state.building_type = None
 
 def display_model_geometry():
     #requirements to display a model:
@@ -95,27 +104,43 @@ def iterate_rooms_and_display_properties():
 
     # Iterate over rooms in the model
 
-    # TODO - add infiltration
-    # TODO - add custom custom gains per room
+    # TODO - Create dropdown per room to allow program type selection
     # TODO - allow user to make changes and make sure they are saved back in the model via the application
     # TODO - allow user to download model 
-
+    
+    st.session_state.vintage = st.selectbox('Construction Period:',list(STANDARDS_REGISTRY),6)
+    st.session_state.building_type = st.selectbox('Building Type:',list(BUILDING_TYPES),6)
+    room_prog = filter_array_by_keywords(PROGRAM_TYPES, [st.session_state.vintage,st.session_state.building_type], False)
+    
     for room in st.session_state.hb_model.rooms:
-        if not room.properties.energy.people:
+        '''if not room.properties.energy.people:
             room.properties.energy.people = get_occupancy_gains(room)
         if not room.properties.energy.lighting:
             room.properties.energy.lighting = get_lighting_gains(room)
         if not room.properties.energy.electric_equipment:
             room.properties.energy.electric_equipment = get_elec_equip_gains(room)
+        if not room.properties.energy.infiltration:
+            room.properties.energy.infiltration = get_infiltration_gains(room)'''
+        if not room.user_data:
+            room.user_data = {'room_prog':random.choice(room_prog)}
+        # if not room.properties.energy.program_type:
+        room.properties.energy.program_type = program_type_by_identifier(room.user_data['room_prog'])
+
+
         
         room_properties = {
             "Display name": room.display_name,
             "Room identifier": room.identifier,
-            "Story": room.story,
+            "Room Program": room.user_data['room_prog'],
             "Floor area": room.floor_area,
-            "Lighting gains": room.properties.energy.lighting.to_dict(),
-            "People gains": room.properties.energy.people.to_dict(),
-            "Elec equipment gains": room.properties.energy.electric_equipment.to_dict()
+            "Lighting gains": room.properties.energy.program_type.lighting.to_dict() if room.properties.energy.program_type.lighting else None,
+            "People gains": room.properties.energy.program_type.people.to_dict() if room.properties.energy.program_type.people else None,
+            "Elec equipment gains": room.properties.energy.program_type.electric_equipment.to_dict() if room.properties.energy.program_type.electric_equipment else None,
+            "Gas equipment gains": room.properties.energy.program_type.gas_equipment.to_dict() if room.properties.energy.program_type.gas_equipment else None,
+            "Service Hot Water": room.properties.energy.program_type.service_hot_water.to_dict() if room.properties.energy.program_type.service_hot_water else None,
+            "Infiltration": room.properties.energy.program_type.infiltration.to_dict() if room.properties.energy.program_type.infiltration else None,
+            "Ventilation": room.properties.energy.program_type.ventilation.to_dict() if room.properties.energy.program_type.ventilation else None,
+            "Set point": room.properties.energy.program_type.setpoint.to_dict() if room.properties.energy.program_type.setpoint else None
         }
         room_data.append(room_properties)
 

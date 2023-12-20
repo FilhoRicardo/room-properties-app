@@ -4,7 +4,7 @@ from honeybee_energy.schedule.day import ScheduleDay
 from honeybee_energy.schedule.typelimit import ScheduleTypeLimit
 from honeybee_energy.load.people import People
 from honeybee_energy.load.equipment import ElectricEquipment
-
+from honeybee_energy.load.infiltration import Infiltration
 import uuid
 
 schedule_limits_dict = {
@@ -37,8 +37,19 @@ schedule_off_day_dict = {
     "interpolate": False
 }
 
+schedule_constant_one_dict = {
+    "type": 'ScheduleDay',
+    "identifier": 'Constant_On',
+    "display_name": 'Constant On',
+    "values": [1],
+    "times": [(0, 0)],
+    "interpolate": False
+}
+
+
 schedule_default_day = ScheduleDay.from_dict(schedule_default_day_dict)
-schedule_off_day = ScheduleDay.from_dict(schedule_off_day_dict) 
+schedule_off_day = ScheduleDay.from_dict(schedule_off_day_dict)
+schedule_constant_one = ScheduleDay.from_dict(schedule_off_day_dict)
 
 schedule_ruleset_dict = {
     "type": 'ScheduleRuleset',
@@ -54,6 +65,21 @@ schedule_ruleset_dict = {
 }
 
 ruleset_schedule = ScheduleRuleset.from_dict(schedule_ruleset_dict)
+
+constant_on_schedule_ruleset_dict = {
+    "type": 'ScheduleRuleset',
+    "identifier": 'Constant_On',
+    "display_name": 'Constant On',
+    "day_schedules": [schedule_constant_one.to_dict()], # Array of ScheduleDay dictionary representations
+    "default_day_schedule": str(schedule_constant_one.identifier), # ScheduleDay identifier
+    "schedule_rules": [], # list of ScheduleRuleAbridged dictionaries
+    "schedule_type_limit": schedule_limits.to_dict(), # ScheduleTypeLimit dictionary representation
+    "holiday_schedule": str(schedule_constant_one.identifier), # ScheduleDay identifier
+    "summer_designday_schedule": str(schedule_constant_one.identifier), # ScheduleDay identifier
+    "winter_designday_schedule": str(schedule_constant_one.identifier) # ScheduleDay identifier
+}
+
+constant_on_ruleset_schedule = ScheduleRuleset.from_dict(constant_on_schedule_ruleset_dict)
 
 def get_lighting_gains(room):
 
@@ -99,3 +125,18 @@ def get_elec_equip_gains(room):
     }
 
     return ElectricEquipment.from_dict(elec_equip_dict)
+
+def get_infiltration_gains(room):
+
+    infiltration_dict = {
+    "type": 'Infiltration',
+    "identifier": f'Open_Office_Infiltration_{str(uuid.uuid4())[:8]}',
+    "display_name": f'Office Infiltration {room.identifier}',
+    "flow_per_exterior_area": 0.0003, # flow per square meter of exterior area
+    "schedule": constant_on_ruleset_schedule.to_dict(), # ScheduleRuleset/ScheduleFixedInterval dictionary
+    "constant_coefficient": 1, # optional constant coefficient
+    "temperature_coefficient": 0, # optional temperature coefficient
+    "velocity_coefficient": 0 # optional velocity coefficient
+    }
+
+    return Infiltration.from_dict(infiltration_dict)

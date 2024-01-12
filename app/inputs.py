@@ -1,5 +1,6 @@
 from ladybug_geometry.geometry3d import Point3D, Face3D, Polyface3D, Vector3D
 import streamlit as st
+from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, GridUpdateMode
 from honeybee.model import Model,Room
 import json
 import web as web
@@ -15,6 +16,7 @@ from honeybee_energy.lib.programtypes import program_type_by_identifier
 from honeybee_energy.lib.programtypes import BUILDING_TYPES
 from honeybee.search import filter_array_by_keywords
 import random
+import uuid
 
 
 
@@ -149,7 +151,21 @@ def iterate_rooms_and_display_properties():
 
     # Display the room properties in Streamlit
     st.write("Room Properties:")
-    room_df_edited = st.data_editor(room_df)
+    #room_df_edited = st.data_editor(room_df)
+
+    # Display each room's properties using expanders
+    for index, room in room_df.iterrows():
+        with st.expander(f"Room: {room['Display name']}"):
+            # Display each property
+            for key, value in room.items():
+                st.write(f"{key}:")
+                if key == "Room Program":
+                    st.selectbox(label=key,options=room_prog,key=str(uuid.uuid4()))
+                elif isinstance(value, dict):
+                    # Use st.json for complex dictionary types like 'schedule'
+                    st.json(value)
+                else:
+                    st.write(value)
 
 # Example usage:
 # Iterate over rooms and display their properties

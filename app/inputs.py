@@ -337,3 +337,4 @@ def iterate_rooms_and_display_properties():
 
             # Assign the updated lighting object back to the new ProgramType
             room.properties.energy.program_type = new_program_type
+

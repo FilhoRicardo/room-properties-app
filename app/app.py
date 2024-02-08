@@ -12,6 +12,7 @@ import streamlit as st
 from pathlib import Path
 import tempfile
 import json
+from hvac import iterate_rooms_hvac
 
 # Import local modules for handling inputs and web visualization
 from inputs import (initialize,upload_hbjson_file,iterate_rooms_and_display_properties)
@@ -44,7 +45,16 @@ def main():
    
 
     if st.session_state.hb_model:
-        iterate_rooms_and_display_properties()
+        tab1, tab2, = st.tabs(["Loads", "HVAC"])
+
+        with tab1:
+            st.header("Loads")
+            iterate_rooms_and_display_properties()
+
+        with tab2:
+            st.header("HVAC")
+            iterate_rooms_hvac(tab2,st)
+        
         st.text("Download model as HB Json file")
         # To download the model we need to convert the object into a string - this is called serialization
         json_string = json.dumps(st.session_state.hb_model.to_dict())

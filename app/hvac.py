@@ -118,7 +118,7 @@ def get_PTACSystem(st, room):
 
     # Selectbox for equipment_type
     equipment_type_options = ['PTAC_ElectricBaseboard', 'PTAC_BoilerBaseboard', 'PTAC_DHWBaseboard', 'PTAC_GasHeaters', 'PTAC_ElectricCoil', 'PTAC_GasCoil', 'PTAC_Boiler', 'PTAC_ASHP', 'PTAC_DHW', 'PTAC', 'PTHP']
-    equipment_type = st.selectbox("Equipment Type", options=equipment_type_options, index=equipment_type_options.index(ptac_system.equipment_type if ptac_system.equipment_type else equipment_type_options[0]), key=f"equipment_subtype-{room.identifier}-{unique_key_suffix}")
+    equipment_type = st.selectbox("Equipment Type", options=equipment_type_options, index=equipment_type_options.index(ptac_system.equipment_type if ptac_system.equipment_type else equipment_type_options[0]), key=f"equipment_subtype-{room.identifier}_1")
     ptac_system.equipment_type = equipment_type
 
     return ptac_system
@@ -567,6 +567,117 @@ def get_WSHPSystem(st, room):
 
     return wshp_system
 
+def get_IdealAirSystem(st, room):
+    from honeybee_energy.hvac.idealair import IdealAirSystem
+
+    # Instantiate the IdealAirSystem with a unique identifier
+    identifier = f"IdealAirSystem-{room.identifier}"
+    ideal_air_system = IdealAirSystem(identifier)
+
+    # Selectbox for economizer_type
+    economizer_type_options = ['NoEconomizer', 'DifferentialDryBulb', 'DifferentialEnthalpy']
+    economizer_type = st.selectbox(
+        "Economizer Type",
+        options=economizer_type_options,
+        index=economizer_type_options.index(ideal_air_system.economizer_type),
+        key=f"economizer_type-{room.identifier}"
+    )
+    ideal_air_system.economizer_type = economizer_type
+
+    # Checkbox for demand_controlled_ventilation
+    demand_controlled_ventilation = st.checkbox(
+        "Demand Controlled Ventilation",
+        value=ideal_air_system.demand_controlled_ventilation,
+        key=f"demand_controlled_ventilation-{room.identifier}"
+    )
+    ideal_air_system.demand_controlled_ventilation = demand_controlled_ventilation
+
+    # Number_input for sensible_heat_recovery
+    sensible_heat_recovery = st.number_input(
+        "Sensible Heat Recovery",
+        min_value=0.0, max_value=1.0,
+        value=ideal_air_system.sensible_heat_recovery,
+        step=0.01,
+        key=f"sensible_heat_recovery-{room.identifier}"
+    )
+    ideal_air_system.sensible_heat_recovery = sensible_heat_recovery
+
+    # Number_input for latent_heat_recovery
+    latent_heat_recovery = st.number_input(
+        "Latent Heat Recovery",
+        min_value=0.0, max_value=1.0,
+        value=ideal_air_system.latent_heat_recovery,
+        step=0.01,
+        key=f"latent_heat_recovery-{room.identifier}"
+    )
+    ideal_air_system.latent_heat_recovery = latent_heat_recovery
+
+    # Number_input for heating_air_temperature
+    heating_air_temperature = st.number_input(
+        "Heating Air Temperature [C]",
+        value=ideal_air_system.heating_air_temperature,
+        step=1.0,
+        key=f"heating_air_temperature-{room.identifier}"
+    )
+    ideal_air_system.heating_air_temperature = heating_air_temperature
+
+    # Number_input for cooling_air_temperature
+    cooling_air_temperature = st.number_input(
+        "Cooling Air Temperature [C]",
+        value=ideal_air_system.cooling_air_temperature,
+        step=1.0,
+        key=f"cooling_air_temperature-{room.identifier}"
+    )
+    ideal_air_system.cooling_air_temperature = cooling_air_temperature
+
+    heating_limit_option = st.selectbox(
+    "Heating Limit Option",
+    options=['Autosize', 'Specify Limit','No Limit'],
+    index=0,
+    key=f"heating_limit_option-{room.identifier}"
+    )
+
+    if heating_limit_option == 'Autosize':
+        ideal_air_system.heating_limit = Autosize()
+    elif heating_limit_option == 'No Limit':
+        ideal_air_system.heating_limit = NoLimit()
+    else:
+        heating_limit = st.number_input(
+            "Specify Heating Limit (W)",
+            min_value=0.0,
+            value=1000.0,  # Example default value
+            step=100.0,
+            key=f"heating_limit-{room.identifier}"
+        )
+        ideal_air_system.heating_limit = heating_limit
+
+    # Extend the function for cooling_limit
+    cooling_limit_option = st.selectbox(
+        "Cooling Limit Option",
+        options=['Autosize', 'Specify Limit','No Limit'],
+        index=0,
+        key=f"cooling_limit_option-{room.identifier}"
+    )
+
+    if cooling_limit_option == 'Autosize':
+        ideal_air_system.cooling_limit = Autosize()
+    elif cooling_limit_option == 'No Limit':
+        ideal_air_system.cooling_limit = NoLimit()
+    else:
+        cooling_limit = st.number_input(
+            "Specify Cooling Limit (W)",
+            min_value=0.0,
+            value=1000.0,  # Example default value
+            step=100.0,
+            key=f"cooling_limit-{room.identifier}"
+        )
+        ideal_air_system.cooling_limit = cooling_limit
+
+    # Checkbox or selectbox for heating_availability and cooling_availability could be added here
+    # if you plan to make them configurable. For simplicity, the example assumes None (default).
+
+    return ideal_air_system
+
 def assign_hvac_system(st, room, equipment_type):
     if equipment_type == "ForcedAirFurnace":
         room.properties.energy.hvac = get_ForcedAirFurnace(st, room)
@@ -602,6 +713,10 @@ def assign_hvac_system(st, room, equipment_type):
         room.properties.energy.hvac = get_WindowACSystem(st, room)
     elif equipment_type == "WSHP":
         room.properties.energy.hvac = get_WSHPSystem(st, room)
+    elif equipment_type == "Not Conditioned":
+        room.properties.energy.hvac = None
+    elif equipment_type == "IdealAirSystem":
+        room.properties.energy.hvac = get_IdealAirSystem(st,room)
 
 def iterate_rooms_hvac(tab,st):
     # Check if the 'hb_model' in the Streamlit session state is an instance of the Model class.
@@ -613,11 +728,11 @@ def iterate_rooms_hvac(tab,st):
         
     for room in st.session_state.hb_model.rooms:
         with st.expander(f"Room identifier: {room.identifier}"):
-            st.write("HVAC assigned")
+            st.write("HVAC Settings:")
             if room.properties.energy.hvac:
                 attributes = room.properties.energy.hvac.to_dict()
             else:
                 attributes = {"type": "IdealAirSystem"}
                 
-            equipment_type = st.selectbox("Equipment type", ROOM_EQUIPMENT,index=ROOM_EQUIPMENT.index(attributes["type"]),key=f"equipment_subtype-{room.identifier}")
+            equipment_type = st.selectbox("Type", ROOM_EQUIPMENT,index=ROOM_EQUIPMENT.index(attributes["type"]),key=f"equipment_subtype-{room.identifier}")
             assign_hvac_system(st, room, equipment_type)

@@ -21,7 +21,7 @@ import copy
 
 
 # Iterate over rooms in the model
-    # TODO - Allow user to assign HVAC system per room. HVAC systems from Honeybee HVAC models
+    # TODO - Investigate why system - VERY important -create the readme and post on linkedin !
     # New APP from here...
     # TODO - Upload weather file OR download from ladybug weather file database
     # TODO - Allow user to run sim
